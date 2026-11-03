@@ -1,0 +1,10 @@
+{
+  "name": "کلاس هوشمند | Smart Classroom",
+  "short_name": "کلاس هوشمند",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f2f5f9",
+  "theme_color": "#142d4e",
+  "description": "سامانه آموزش کامپیوتر پایه اول تا ششم"
+}

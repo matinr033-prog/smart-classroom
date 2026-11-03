@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#142d4e">
+<meta name="description" content="سامانه مدیریت کلاس‌های آموزش کامپیوتر پایه اول تا ششم">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="stylesheet" href="./style.css">
+<title>کلاس هوشمند | Smart Classroom</title>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="brand"><div class="brand-logo">ک</div><div><h1 data-t="appName">کلاس هوشمند</h1><p data-t="appSub">مدیریت آموزش کامپیوتر پایه اول تا ششم</p></div></div>
+    <div class="header-actions"><span id="connection" class="pill">در حال بررسی اتصال…</span><select id="lang" aria-label="Language"><option value="fa">فارسی</option><option value="en">English</option></select></div>
+  </div>
+</header>
+<main>
+  <section id="setupNotice" class="notice">
+    <b data-t="setupTitle">اتصال آنلاین هنوز تنظیم نشده</b>
+    <p data-t="setupBody">برای حساب واقعی و همگام‌سازی اینترنتی، تنظیمات Supabase را طبق راهنمای همراه فایل انجام بده. حالت محلی همین حالا قابل آزمایش است.</p>
+  </section>
+
+  <section id="loginScreen" class="panel login-panel">
+    <h2 data-t="signIn">ورود به سامانه</h2>
+    <p class="muted" data-t="signInHelp">برای ورود آنلاین از حسابی که در سرور ساخته شده استفاده کن.</p>
+    <form id="loginForm">
+      <label><span data-t="email">ایمیل</span><input id="loginEmail" type="email" autocomplete="username" required dir="ltr"></label>
+      <label><span data-t="password">رمز عبور</span><input id="loginPassword" type="password" autocomplete="current-password" required minlength="6"></label>
+      <button class="primary full" type="submit" data-t="signInBtn">ورود</button>
+    </form>
+    <p id="loginMsg" class="message" role="status"></p>
+    <details class="demo-box">
+      <summary data-t="demoTitle">ورود آزمایشی بدون اینترنت</summary>
+      <p class="muted" data-t="demoDesc">حالت آزمایشی برای بررسی امکانات روی همین دستگاه است و جایگزین حساب آنلاین امن نیست.</p>
+      <div class="button-row"><button type="button" id="demoTeacher" class="secondary" data-t="demoTeacher">ورود آزمایشی مدرس</button><button type="button" id="demoStudent" class="secondary" data-t="demoStudent">ورود آزمایشی دانش‌آموز</button></div>
+    </details>
+  </section>
+
+  <section id="workspace" class="hidden">
+    <div class="welcome panel">
+      <div><h2 id="welcomeName">خوش آمدید</h2><p id="roleLabel" class="muted"></p></div>
+      <div class="button-row"><button id="syncBtn" class="secondary" type="button" data-t="sync">همگام‌سازی</button><button id="logoutBtn" class="danger" type="button" data-t="logout">خروج</button></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span data-t="students">دانش‌آموزان</span><b id="statStudents">0</b></div>
+      <div class="stat"><span data-t="lessons">درس‌ها</span><b id="statLessons">0</b></div>
+      <div class="stat"><span data-t="assignments">تکالیف</span><b id="statAssignments">0</b></div>
+      <div class="stat"><span data-t="pending">در انتظار همگام‌سازی</span><b id="statPending">0</b></div>
+    </div>
+    <nav id="navigation" class="tabs">
+      <button class="tab active" data-page="home" data-t="home">خانه</button>
+      <button class="tab teacher-only" data-page="students" data-t="studentsPage">دانش‌آموزان</button>
+      <button class="tab" data-page="lessons" data-t="lessons">درس‌ها</button>
+      <button class="tab teacher-only" data-page="attendance" data-t="attendance">حضور و غیاب</button>
+      <button class="tab" data-page="assignments" data-t="assignments">تکالیف</button>
+      <button class="tab" data-page="quizzes" data-t="quizzes">آزمون و نمرات</button>
+      <button class="tab" data-page="backup" data-t="backup">پشتیبان‌گیری</button>
+    </nav>
+
+    <section id="page-home" class="page">
+      <div class="grid-two">
+        <article class="panel"><h3 data-t="quickActions">دسترسی سریع</h3><p data-t="homeIntro">از منو برای مدیریت کلاس و مشاهده محتوای آموزشی استفاده کن.</p>
+          <div class="info-box"><b data-t="offlineHeading">استفاده آفلاین</b><p data-t="offlineText">اطلاعات این دستگاه در حافظه مرورگر ذخیره می‌شود. برای جلوگیری از ازدست‌رفتن اطلاعات، مرتب پشتیبان بگیر. همگام‌سازی آنلاین فقط پس از تنظیم سرور فعال می‌شود.</p></div>
+        </article>
+        <article class="panel"><h3 data-t="latestLessons">آخرین درس‌ها</h3><div id="homeLessons"></div></article>
+      </div>
+    </section>
+
+    <section id="page-students" class="page hidden teacher-only">
+      <div class="grid-two">
+        <article class="panel"><h3 data-t="addStudent">افزودن دانش‌آموز</h3>
+          <form id="studentForm">
+            <label><span data-t="fullName">نام و نام خانوادگی</span><input id="studentName" required maxlength="100"></label>
+            <label><span data-t="grade">پایه تحصیلی</span><select id="studentGrade"><option value="1">اول / Grade 1</option><option value="2">دوم / Grade 2</option><option value="3">سوم / Grade 3</option><option value="4">چهارم / Grade 4</option><option value="5">پنجم / Grade 5</option><option value="6">ششم / Grade 6</option></select></label>
+            <label><span data-t="studentEmail">ایمیل ورود دانش‌آموز</span><input id="studentEmail" type="email" dir="ltr" required></label>
+            <label><span data-t="tempPassword">رمز موقت (حداقل ۸ نویسه)</span><input id="studentPassword" type="password" minlength="8" required autocomplete="new-password"></label>
+            <button class="primary" type="submit" data-t="createAccount">ساخت حساب آنلاین</button>
+            <p class="muted small" data-t="accountNote">در حالت آزمایشی، فقط کارت دانش‌آموز روی همین دستگاه ساخته می‌شود. ساخت حساب واقعی نیازمند تابع سرور است.</p>
+          </form><p id="studentMsg" class="message"></p>
+        </article>
+        <article class="panel"><h3 data-t="studentRoster">فهرست دانش‌آموزان</h3><div id="studentRoster"></div></article>
+      </div>
+    </section>
+
+    <section id="page-lessons" class="page hidden">
+      <div class="grid-two">
+        <article class="panel teacher-only"><h3 data-t="newLesson">درس جدید</h3>
+          <form id="lessonForm">
+            <label><span data-t="title">عنوان</span><input id="lessonTitle" required maxlength="150"></label>
+            <label><span data-t="grade">پایه تحصیلی</span><select id="lessonGrade"><option value="0">همه پایه‌ها / All grades</option><option value="1">اول / Grade 1</option><option value="2">دوم / Grade 2</option><option value="3">سوم / Grade 3</option><option value="4">چهارم / Grade 4</option><option value="5">پنجم / Grade 5</option><option value="6">ششم / Grade 6</option></select></label>
+            <label><span data-t="content">متن درس</span><textarea id="lessonContent" rows="5"></textarea></label>
+            <label><span data-t="link">لینک فایل/ویدئو (اختیاری)</span><input id="lessonLink" type="url" dir="ltr" placeholder="https://..."></label>
+            <button class="primary" type="submit" data-t="saveLesson">ذخیره درس</button>
+          </form><p id="lessonMsg" class="message"></p>
+        </article>
+        <article class="panel"><h3 data-t="lessonLibrary">کتابخانه درس‌ها</h3><div id="lessonList"></div></article>
+      </div>
+    </section>
+
+    <section id="page-attendance" class="page hidden teacher-only">
+      <div class="grid-two">
+        <article class="panel"><h3 data-t="markAttendance">ثبت حضور و غیاب</h3>
+          <form id="attendanceForm">
+            <label><span data-t="student">دانش‌آموز</span><select id="attendanceStudent" required></select></label>
+            <label><span data-t="date">تاریخ</span><input id="attendanceDate" type="date" required></label>
+            <label><span data-t="status">وضعیت</span><select id="attendanceStatus"><option value="present">حاضر / Present</option><option value="absent">غایب / Absent</option><option value="late">با تأخیر / Late</option></select></label>
+            <button class="primary" type="submit" data-t="save">ثبت</button>
+          </form><p id="attendanceMsg" class="message"></p>
+        </article>
+        <article class="panel"><h3 data-t="attendanceRecords">سوابق حضور و غیاب</h3><div id="attendanceList"></div></article>
+      </div>
+    </section>
+
+    <section id="page-assignments" class="page hidden">
+      <div class="grid-two">
+        <article class="panel teacher-only"><h3 data-t="newAssignment">تعریف تکلیف</h3>
+          <form id="assignmentForm">
+            <label><span data-t="title">عنوان</span><input id="assignmentTitle" required maxlength="150"></label>
+            <label><span data-t="grade">پایه تحصیلی</span><select id="assignmentGrade"><option value="0">همه پایه‌ها / All grades</option><option value="1">اول / Grade 1</option><option value="2">دوم / Grade 2</option><option value="3">سوم / Grade 3</option><option value="4">چهارم / Grade 4</option><option value="5">پنجم / Grade 5</option><option value="6">ششم / Grade 6</option></select></label>
+            <label><span data-t="deadline">مهلت انجام</span><input id="assignmentDue" type="date"></label>
+            <label><span data-t="instructions">توضیحات تکلیف</span><textarea id="assignmentDescription" rows="4"></textarea></label>
+            <button class="primary" type="submit" data-t="saveAssignment">ذخیره تکلیف</button>
+          </form><p id="assignmentMsg" class="message"></p>
+        </article>
+        <article class="panel"><h3 data-t="assignmentList">فهرست تکالیف</h3><div id="assignmentList"></div></article>
+      </div>
+      <article class="panel student-only hidden"><h3 data-t="submitWork">ارسال پاسخ تکلیف</h3>
+        <form id="submissionForm">
+          <label><span data-t="chooseAssignment">انتخاب تکلیف</span><select id="submissionAssignment" required></select></label>
+          <label><span data-t="answer">پاسخ دانش‌آموز</span><textarea id="submissionText" rows="5" required></textarea></label>
+          <button class="primary" type="submit" data-t="sendAnswer">ذخیره پاسخ</button>
+        </form><p id="submissionMsg" class="message"></p>
+        <h3 data-t="mySubmissions">پاسخ‌های من</h3><div id="submissionList"></div>
+      </article>
+      <article class="panel teacher-only hidden" id="reviewPanel"><h3 data-t="reviewSubmissions">بررسی پاسخ‌ها</h3><div id="reviewList"></div></article>
+    </section>
+
+    <section id="page-quizzes" class="page hidden">
+      <div class="grid-two">
+        <article class="panel teacher-only"><h3 data-t="createQuiz">ساخت آزمون ساده</h3>
+          <form id="quizForm">
+            <label><span data-t="title">عنوان</span><input id="quizTitle" required maxlength="150"></label>
+            <label><span data-t="grade">پایه تحصیلی</span><select id="quizGrade"><option value="0">همه پایه‌ها / All grades</option><option value="1">اول / Grade 1</option><option value="2">دوم / Grade 2</option><option value="3">سوم / Grade 3</option><option value="4">چهارم / Grade 4</option><option value="5">پنجم / Grade 5</option><option value="6">ششم / Grade 6</option></select></label>
+            <label><span data-t="question">سؤال</span><textarea id="quizQuestion" rows="2" required></textarea></label>
+            <label><span data-t="options">گزینه‌ها (هر گزینه در یک خط)</span><textarea id="quizOptions" rows="4" required placeholder="گزینه ۱&#10;گزینه ۲&#10;گزینه ۳&#10;گزینه ۴"></textarea></label>
+            <label><span data-t="correct">شماره گزینه صحیح (از 1 شروع می‌شود)</span><input id="quizCorrect" type="number" min="1" max="10" value="1" required></label>
+            <button class="primary" type="submit" data-t="publishQuiz">انتشار آزمون</button>
+          </form><p id="quizMsg" class="message"></p>
+        </article>
+        <article class="panel"><h3 data-t="quizList">آزمون‌ها</h3><div id="quizList"></div></article>
+      </div>
+      <article class="panel"><h3 data-t="gradebook">دفتر نمرات</h3><div id="gradebook"></div></article>
+    </section>
+
+    <section id="page-backup" class="page hidden">
+      <div class="grid-two">
+        <article class="panel"><h3 data-t="backupTitle">پشتیبان‌گیری</h3><p data-t="backupBody">از اطلاعات این دستگاه فایل JSON بگیر و در جای امن نگه دار.</p>
+          <div class="button-row"><button id="exportBtn" class="primary" type="button" data-t="downloadBackup">دانلود پشتیبان</button><button id="printBtn" class="secondary" type="button" data-t="print">چاپ</button></div>
+          <label><span data-t="chooseBackup">انتخاب فایل پشتیبان</span><input id="backupFile" type="file" accept=".json,application/json"></label><button id="restoreBtn" class="danger" type="button" data-t="restore">بازیابی</button>
+        </article>
+        <article class="panel"><h3 data-t="dataSafety">امنیت اطلاعات</h3><p data-t="safetyBody">اطلاعات آموزشی دانش‌آموزان خصوصی است. رمزهای عبور را در فایل پشتیبان ذخیره نکن. نسخه آزمایشی محلی رمزگذاری‌شده نیست.</p><button id="clearBtn" class="danger" type="button" data-t="clearLocal">پاک‌کردن داده‌های محلی</button></article>
+      </div>
+    </section>
+  </section>
+</main>
+<footer>Smart Classroom · MVP · <span data-t="footerNote">نسخه اولیه قابل توسعه</span></footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./app.js"></script>
+</body>
+</html>
