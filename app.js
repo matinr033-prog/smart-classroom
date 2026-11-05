@@ -69,14 +69,25 @@ function localTable(table){const map={profiles:"students"};return data[map[table
 async function syncOnline(){
  if(!client||demo||!currentUser||!navigator.onLine)return;
  try{
-  // Fetch server-owned data. Local-only records are not uploaded automatically in this MVP.
-  const tables=["profiles","lessons","attendance","assignments","submissions","quizzes","grades"];
+  // Load ordinary tables separately. Quiz answer keys are fetched only for teachers.
+  const tables=["profiles","lessons","attendance","assignments","submissions","grades"];
   const results=await Promise.all(tables.map(table=>client.from(table).select("*")));
   for(let i=0;i<tables.length;i++){
-   const {data:rows,error}=results[i];if(error)continue;
+   const {data:rows,error}=results[i];
+   if(error){console.warn("Sync "+tables[i]+":",error.message);continue}
    const key=tables[i]==="profiles"?"students":tables[i];
    if(tables[i]==="profiles")data.students=(rows||[]).filter(x=>x.role==="student");
    else data[key]=rows||[];
+  }
+
+  // Students receive only public quiz fields; teachers use a protected RPC.
+  const quizResult=isTeacher()
+    ? await client.rpc("teacher_list_quizzes")
+    : await client.from("quizzes").select("id,title,grade,question,options,created_by,created_at");
+  if(quizResult.error){
+   console.warn("Quiz sync:",quizResult.error.message);
+  }else{
+   data.quizzes=quizResult.data||[];
   }
   persist();
  }catch(e){console.warn(e)}
@@ -115,7 +126,41 @@ $("submissionForm").addEventListener("submit",async e=>{e.preventDefault();if(!i
 $("quizForm").addEventListener("submit",async e=>{e.preventDefault();if(!isTeacher())return;const opts=$("quizOptions").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean),correct=Number($("quizCorrect").value);if(opts.length<2||correct<1||correct>opts.length){msg("quizMsg","گزینه‌ها یا شماره پاسخ صحیح معتبر نیست.",true);return}
  const row={id:uid(),title:$("quizTitle").value.trim(),grade:Number($("quizGrade").value),question:$("quizQuestion").value.trim(),options:opts,correct_index:correct,created_by:currentUser?.id||null};
  const r=await insertRow("quizzes",row);if(r.error){msg("quizMsg",r.error.message,true);return}msg("quizMsg",r.local?t("savedLocal"):t("quizSaved"));e.target.reset()});
-window.submitQuiz=async(event,id)=>{event.preventDefault();if(!isStudent())return;const q=data.quizzes.find(x=>x.id===id);if(!q)return;const selected=Number(new FormData(event.target).get("answer-"+id));if(!selected)return;const score=selected===Number(q.correct_index)?100:0;const row={id:uid(),quiz_id:id,student_id:currentProfile.id,selected_index:selected,score,created_at:new Date().toISOString()};const r=await insertRow("grades",row);if(r.error){alert(r.error.message);return}render()};
+window.submitQuiz=async(event,id)=>{
+ event.preventDefault();
+ if(!isStudent())return;
+ const q=data.quizzes.find(x=>x.id===id);
+ if(!q)return;
+ const selected=Number(new FormData(event.target).get("answer-"+id));
+ if(!selected)return;
+
+ // Demo mode is local-only; secure online grading is performed by the server.
+ if(demo||!navigator.onLine||!client){
+  if(!demo&&!navigator.onLine){
+   alert("برای ثبت امن آزمون باید به اینترنت وصل شوید. در این نسخه پاسخ آفلاین ثبت نمی‌شود.");
+   return;
+  }
+  const score=selected===Number(q.correct_index)?100:0;
+  data.grades.push({
+   id:uid(),quiz_id:id,student_id:currentProfile.id,
+   selected_index:selected,score,created_at:new Date().toISOString()
+  });
+  persist();
+  return;
+ }
+
+ const {data:score,error}=await client.rpc("submit_quiz_answer",{
+  p_quiz_id:id,
+  p_selected_index:selected
+ });
+ if(error){alert(error.message);return}
+ data.grades.push({
+  id:uid(),quiz_id:id,student_id:currentProfile.id,
+  selected_index:selected,score:Number(score),
+  created_at:new Date().toISOString()
+ });
+ render();
+};
 window.gradeSubmission=async id=>{if(!isTeacher())return;const sub=data.submissions.find(x=>x.id===id);const score=Number($("mark-"+id).value);if(!sub||!Number.isFinite(score)||score<0||score>100){alert("Enter a score from 0 to 100");return}sub.mark=score;persist();if(client&&!demo&&navigator.onLine){const {error}=await client.from("submissions").update({mark:score}).eq("id",id);if(error)alert(error.message)}};
 window.deleteRecord=async(table,id)=>{if(!isTeacher()||!confirm(t("deleteConfirm")))return;const key=table==="profiles"?"students":table;data[key]=(data[key]||[]).filter(x=>x.id!==id);if(demo||!client||!navigator.onLine){enqueue("delete",table,{id},id);persist();return}
  const {error}=await client.from(table).delete().eq("id",id);if(error)alert(error.message);else await syncOnline()};
